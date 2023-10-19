@@ -19,12 +19,12 @@ public final class CoordinateTransformUtil {
     /**
      * Transforms the given {@code coordinate} from the given {@code srcCRSCode} to {@code destCRSCode}.
      *
-     * @param srcCRSCode  the source coordinate reference system identifier
-     *                    in the format '<'identifier'>':'<'code'>' (e.g., "EPSG:3414")
-     * @param destCRSCode the destination coordinate reference system identifier
-     *                    in the format '<'identifier'>':'<'code'>' (e.g., "EPSG:4326")
-     * @param coordinate  the coordinate to transform
-     * @return the transformed coordinate
+     * @param srcCRSCode  The source coordinate reference system identifier
+     *                    in the format {@code <identifier>:<code>} (e.g., "EPSG:3414")
+     * @param destCRSCode The destination coordinate reference system identifier
+     *                    in the format {@code <identifier>:<code>} (e.g., "EPSG:4326")
+     * @param coordinate  The coordinate to transform
+     * @return The transformed coordinate
      */
     public static ProjCoordinate transform(String srcCRSCode, String destCRSCode, ProjCoordinate coordinate) {
         CoordinateReferenceSystem srcCRS = crsFactory.createFromName(srcCRSCode);
