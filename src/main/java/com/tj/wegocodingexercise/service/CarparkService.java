@@ -51,7 +51,7 @@ public class CarparkService {
     }
 
     @Transactional
-    public void loadCarparksFromCSV() {
+    public void loadFromCSV() {
         if (carparkRepository.count() > 0) {
             // No need to load data again
             return;
@@ -59,14 +59,14 @@ public class CarparkService {
 
         logger.info("Loading carparks from CSV file start.");
 
-        List<Carpark> carparks = loadCarparksFromCSVResource("/data/HDBCarparkInformation.csv");
+        List<Carpark> carparks = loadFromCSVResource("/data/HDBCarparkInformation.csv");
 
         carparkRepository.saveAll(carparks);
 
         logger.info("Loading carparks from CSV file end.");
     }
 
-    private List<Carpark> loadCarparksFromCSVResource(String resourcePath) {
+    private List<Carpark> loadFromCSVResource(String resourcePath) {
         try (InputStream inputStream = getClass().getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
                 throw new FileNotFoundException("File not found: " + resourcePath);
@@ -81,7 +81,7 @@ public class CarparkService {
                 Iterable<CSVRecord> records = csvFormat.parse(reader);
 
                 return StreamSupport.stream(records.spliterator(), false)
-                    .map(this::buildFromCSV)
+                    .map(this::buildFrom)
                     .toList();
             }
         } catch (IOException e) {
@@ -89,7 +89,7 @@ public class CarparkService {
         }
     }
 
-    private Carpark buildFromCSV(CSVRecord csvRecord) {
+    private Carpark buildFrom(CSVRecord csvRecord) {
         ProjCoordinate coordinate = CoordinateTransformUtil.transform(
             CoordinateTransformUtil.SVY21,
             CoordinateTransformUtil.WGS84,
