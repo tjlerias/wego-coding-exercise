@@ -13,7 +13,7 @@
             <column name="address" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="location" type="geometry">
+            <column name="location" type="geometry(Point, 4326)">
                 <constraints nullable="false" />
             </column>
             <column name="created_at" type="timestamp">

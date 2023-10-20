@@ -7,8 +7,10 @@ import com.tj.wegocodingexercise.repository.CarparkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.math3.util.Precision;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.proj4j.ProjCoordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,7 @@ public class CarparkService {
     private static final String[] CARPARK_CSV_HEADERS = {CAR_PARK_NUMBER, ADDRESS, X_COORDINATE, Y_COORDINATE, CAR_PARK_TYPE,
         PARKING_SYSTEM_TYPE, SHORT_TERM_PARKING, FREE_PARKING, NIGHT_PARKING, CAR_PARK_DECKS,
         GANTRY_HEIGHT, CAR_PARK_BASEMENT};
+
     private final GeometryFactory geometryFactory = new GeometryFactory();
 
     private final CarparkRepository carparkRepository;
@@ -120,10 +123,21 @@ public class CarparkService {
                 Double.parseDouble(csvRecord.get(Y_COORDINATE))
             )
         );
+
         return new Carpark(
             csvRecord.get(CAR_PARK_NUMBER),
             csvRecord.get(ADDRESS),
-            geometryFactory.createPoint(new Coordinate(coordinate.x, coordinate.y))
+            geometryFactory.createPoint(
+                new Coordinate(
+                    Precision.round(coordinate.x, 5),
+                    Precision.round(coordinate.y, 5)
+                ))
         );
+    }
+
+    public void getNearbyCarParks() {
+        Point location = geometryFactory.createPoint(new Coordinate(103.897, 1.37326));
+        Integer distance = 500;
+        carparkRepository.findNearbyCarparks(location, distance);
     }
 }
