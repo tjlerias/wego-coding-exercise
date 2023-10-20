@@ -6,6 +6,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.TimeZone;
+
 @Profile("!test")
 @Component
 public class StartupRunner implements ApplicationRunner {
@@ -18,6 +20,7 @@ public class StartupRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        carparkService.loadCarparksFromCSV();
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
+        carparkService.loadCarparkData();
     }
 }

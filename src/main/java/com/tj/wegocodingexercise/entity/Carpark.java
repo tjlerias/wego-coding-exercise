@@ -10,6 +10,16 @@ import org.locationtech.jts.geom.Point;
 @Entity
 public class Carpark extends BaseEntity {
 
+    @Id
+    @Column(nullable = false, length = 4)
+    private String id;
+    @Column(nullable = false)
+    private String address;
+    @Column(nullable = false, columnDefinition = "geometry(Point, 4326)")
+    private Point location;
+    @OneToOne(mappedBy = "carpark", cascade = CascadeType.ALL)
+    private CarparkAvailability availability;
+
     public Carpark() {
     }
 
@@ -18,19 +28,6 @@ public class Carpark extends BaseEntity {
         this.address = address;
         this.location = location;
     }
-
-    @Id
-    @Column(nullable = false, length = 4)
-    private String id;
-
-    @Column(nullable = false)
-    private String address;
-
-    @Column(nullable = false, columnDefinition = "geometry(Point, 4326)")
-    private Point location;
-
-    @OneToOne(mappedBy = "carpark", cascade = CascadeType.ALL)
-    private CarparkAvailability availability;
 
     public String getId() {
         return id;

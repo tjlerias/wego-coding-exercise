@@ -1,6 +1,8 @@
 package com.tj.wegocodingexercise.service;
 
+import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
 import com.tj.wegocodingexercise.entity.Carpark;
+import com.tj.wegocodingexercise.entity.CarparkAvailability;
 import com.tj.wegocodingexercise.repository.CarparkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
 import org.apache.commons.csv.CSVFormat;
@@ -10,6 +12,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.proj4j.ProjCoordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +22,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
 @Transactional(readOnly = true)
 public class CarparkService {
 
-    private Logger logger = LoggerFactory.getLogger(CarparkService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CarparkService.class);
 
     private static final String CAR_PARK_NUMBER = "car_park_no";
     private static final String ADDRESS = "address";
@@ -45,25 +52,40 @@ public class CarparkService {
     private final GeometryFactory geometryFactory = new GeometryFactory();
 
     private final CarparkRepository carparkRepository;
+    private final DataGovSGService dataGovSGService;
+    private final String carparkInformationCsvPath;
 
-    public CarparkService(CarparkRepository carparkRepository) {
+    public CarparkService(
+        CarparkRepository carparkRepository,
+        DataGovSGService dataGovSGService,
+        @Value("${carpark.information.csv.path}") String carparkInformationCsvPath
+    ) {
         this.carparkRepository = carparkRepository;
+        this.dataGovSGService = dataGovSGService;
+        this.carparkInformationCsvPath = carparkInformationCsvPath;
     }
 
     @Transactional
-    public void loadFromCSV() {
+    public void loadCarparkData() {
         if (carparkRepository.count() > 0) {
             // No need to load data again
             return;
         }
 
-        logger.info("Loading carparks from CSV file start.");
+        logger.info("Loading carpark data to the database start.");
 
-        List<Carpark> carparks = loadFromCSVResource("/data/HDBCarparkInformation.csv");
+        List<Carpark> carparks = loadFromCSVResource(carparkInformationCsvPath);
+
+        Map<String, CarparkAvailabilityDTO> availabilityPerCarpark =
+            dataGovSGService.getCarparkAvailability(null).stream()
+                .collect(Collectors.toMap(CarparkAvailabilityDTO::carparkNumber, Function.identity()));
+
+        carparks.forEach(carpark -> Optional.ofNullable(availabilityPerCarpark.get(carpark.getId()))
+            .ifPresent(a -> carpark.setAvailability(new CarparkAvailability(carpark, a.totalLots(), a.availableLots()))));
 
         carparkRepository.saveAll(carparks);
 
-        logger.info("Loading carparks from CSV file end.");
+        logger.info("Loading carpark data to the database end.");
     }
 
     private List<Carpark> loadFromCSVResource(String resourcePath) {
