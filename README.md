@@ -71,3 +71,8 @@ To run the app, follow these steps:
     | distance  | Optional. Default is 500 meters | integer |
     | page      | Page number                     | integer |
     | per_page  | Page size                       | integer |
+    
+    Sample cURL:
+    ```
+    curl --location 'http://localhost:8080/v1/carparks/nearest?latitude=1.37326&longitude=103.897&distance=500&page=1&per_page=3'
+    ```
