@@ -6,6 +6,7 @@ import com.tj.wegocodingexercise.client.CarparkInfo;
 import com.tj.wegocodingexercise.client.DataGovSGClient;
 import com.tj.wegocodingexercise.client.Item;
 import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ public class DataGovSGService {
         this.dataGovSGClient = dataGovSGClient;
     }
 
+    @Cacheable(cacheNames = "carparkAvailability", sync = true)
     public Map<String, CarparkAvailabilityDTO> getCarparkAvailability() {
         CarparkAvailabilityResponse response = dataGovSGClient.getCarparkAvailability();
 
