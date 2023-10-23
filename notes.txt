@@ -1,0 +1,59 @@
+Carpark dataset
+    - save to database on application startup. Once it's already loaded to the database,
+      don't load it again whenever the application is restarted
+    - use https://epsg.io/transform to check transformation of coordinates
+
+Carpark availability
+    - save all data on startup if `car_park_availability` table is not yet populated
+    - lazy loading: whenever a user access data for a carPark, compare the `update_datetime`
+      from the API response to `updated_at` from the database to check if the database record
+      needs to be updated
+
+    - notes:
+        - `update_datetime` from API response returns timestamp without timezone, but it is in GMT+8
+        - `carpark_info` may have 1 or more lot types, each containing different total lots and available lots
+        - multiple items with the same `carpark_number` may exist, but with different content in `carpark_info`
+
+    - Considerations:
+        - get total `total_lots` and `lots_available` per `carpark_number` to keep things simple
+        - cache carPark availability response since the data only gets updated every minute, and we don't want
+          to call the external API multiple times returning the same data.
+
+Nearest Carpark
+    - Use Geohashing?
+        - used to locate nearby places
+        - can filter down the potential nearby locations
+    - Use PostGIS since I'm already using Postgresql
+        - can store coordinates as spatial data
+        - use built-in spatial functions
+        - will not need geohashing
+        - can add spatial indexing
+
+    - Params:
+        - longitude
+        - latitude
+        - page
+        - per_page
+    - Response:
+        - address
+        - latitude
+        - longitude
+        - total_lots
+        - available_lots
+
+    - notes:
+        - use PostGIS, since the database used is Postgres, and it is widely used,
+          proven and tested for geographic data
+
+Coordinates 4 decimal places
+    - Can locate individual buildings or houses
+
+SRID (Spatial Reference ID)
+    - WGS84 -> 4326
+    - Make sure to add the SRID for the carPark location in the database
+
+PostGIS
+    - ST_DWithin: Checks if two geometries are within a specified distance of each other.
+      Useful for filtering out points beyond a certain radius.
+    - ST_Distance: Computes the shortest distance between two geometries. Useful for sorting
+      points based on their proximity to a reference point.
