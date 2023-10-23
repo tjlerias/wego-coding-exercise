@@ -123,6 +123,24 @@ class CarParkControllerTest {
     }
 
     @Test
+    void getNearestCarParks_invalidDistance_badRequest() throws Exception {
+        Error error = new Error("distance", "Distance must be greater than or equal to 500");
+        ErrorResponse expected = new ErrorResponse(BAD_REQUEST.value(), null, List.of(error));
+
+        MvcResult result = mockMvc.perform(
+                MockMvcRequestBuilders.get("/v1/carparks/nearest")
+                    .param("longitude", "103.897")
+                    .param("latitude", "1.37326")
+                    .param("distance", "100"))
+            .andExpect(status().isBadRequest())
+            .andReturn();
+
+        assertThat(result.getResponse().getContentAsString()).isEqualTo(objectMapper.writeValueAsString(expected));
+
+        verifyNoMoreInteractions(carParkService);
+    }
+
+    @Test
     void getNearestCarParks_negativePage_badRequest() throws Exception {
         ErrorResponse expected = new ErrorResponse(BAD_REQUEST.value(), "Page index must not be less than zero", null);
 
