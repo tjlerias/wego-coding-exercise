@@ -139,8 +139,8 @@ public class CarParkService {
             csvRecord.get(ADDRESS),
             geometryFactory.createPoint(
                 new Coordinate(
-                    Precision.round(coordinate.x, 4),
-                    Precision.round(coordinate.y, 4)
+                    Precision.round(coordinate.x, 5),
+                    Precision.round(coordinate.y, 5)
                 ))
         );
     }
