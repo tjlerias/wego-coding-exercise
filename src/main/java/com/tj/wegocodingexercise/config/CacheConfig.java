@@ -1,6 +1,6 @@
 package com.tj.wegocodingexercise.config;
 
-import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
+import com.tj.wegocodingexercise.dto.CarParkAvailabilityDTO;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.SimpleKey;
 import org.springframework.cache.jcache.JCacheCacheManager;
@@ -25,13 +25,13 @@ public class CacheConfig {
         CachingProvider provider = Caching.getCachingProvider();
         CacheManager cacheManager = provider.getCacheManager();
 
-        MutableConfiguration<SimpleKey, Map<String, CarparkAvailabilityDTO>> configuration =
-            new MutableConfiguration<SimpleKey, Map<String, CarparkAvailabilityDTO>>()
-                .setTypes(SimpleKey.class, (Class<Map<String, CarparkAvailabilityDTO>>) (Class<?>) Map.class)
+        MutableConfiguration<SimpleKey, Map<String, CarParkAvailabilityDTO>> configuration =
+            new MutableConfiguration<SimpleKey, Map<String, CarParkAvailabilityDTO>>()
+                .setTypes(SimpleKey.class, (Class<Map<String, CarParkAvailabilityDTO>>) (Class<?>) Map.class)
                 .setStoreByValue(false)
                 .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(Duration.ONE_MINUTE));
 
-        cacheManager.createCache("carparkAvailability", configuration);
+        cacheManager.createCache("carParkAvailability", configuration);
 
         return new JCacheCacheManager(cacheManager);
     }

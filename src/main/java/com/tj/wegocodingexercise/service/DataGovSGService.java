@@ -1,11 +1,11 @@
 package com.tj.wegocodingexercise.service;
 
-import com.tj.wegocodingexercise.client.CarparkAvailabilityResponse;
-import com.tj.wegocodingexercise.client.CarparkData;
-import com.tj.wegocodingexercise.client.CarparkInfo;
+import com.tj.wegocodingexercise.client.CarParkAvailabilityResponse;
+import com.tj.wegocodingexercise.client.CarParkData;
+import com.tj.wegocodingexercise.client.CarParkInfo;
 import com.tj.wegocodingexercise.client.DataGovSGClient;
 import com.tj.wegocodingexercise.client.Item;
-import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
+import com.tj.wegocodingexercise.dto.CarParkAvailabilityDTO;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -23,52 +23,52 @@ public class DataGovSGService {
         this.dataGovSGClient = dataGovSGClient;
     }
 
-    @Cacheable(cacheNames = "carparkAvailability", sync = true)
-    public Map<String, CarparkAvailabilityDTO> getCarparkAvailability() {
-        CarparkAvailabilityResponse response = dataGovSGClient.getCarparkAvailability();
+    @Cacheable(cacheNames = "carParkAvailability", sync = true)
+    public Map<String, CarParkAvailabilityDTO> getCarParkAvailability() {
+        CarParkAvailabilityResponse response = dataGovSGClient.getCarParkAvailability();
 
         return response.items().stream()
-            .map(Item::carparkData)
+            .map(Item::carParkData)
             .flatMap(Collection::stream)
             .collect(Collectors.toMap(
-                CarparkData::carparkNumber,
+                CarParkData::carParkNumber,
                 this::buildFrom,
-                // Multiple CarparkData entries can have the same carpark number but different
-                // lot types in their carpark info, thus we need to merge their details.
-                this::mergeCarparkAvailability
+                // Multiple CarParkData entries can have the same car park number but different
+                // lot types in their car park info, thus we need to merge their details.
+                this::mergeCarParkAvailability
             ));
     }
 
-    private CarparkAvailabilityDTO mergeCarparkAvailability(
-        CarparkAvailabilityDTO existingCarparkAvailability,
-        CarparkAvailabilityDTO newCarparkAvailability
+    private CarParkAvailabilityDTO mergeCarParkAvailability(
+        CarParkAvailabilityDTO existingCarParkAvailability,
+        CarParkAvailabilityDTO newCarParkAvailability
     ) {
-        LocalDateTime lastUpdated = existingCarparkAvailability.lastUpdated().isAfter(newCarparkAvailability.lastUpdated())
-            ? existingCarparkAvailability.lastUpdated()
-            : newCarparkAvailability.lastUpdated();
+        LocalDateTime lastUpdated = existingCarParkAvailability.lastUpdated().isAfter(newCarParkAvailability.lastUpdated())
+            ? existingCarParkAvailability.lastUpdated()
+            : newCarParkAvailability.lastUpdated();
 
-        return new CarparkAvailabilityDTO(
-            existingCarparkAvailability.carparkNumber(),
-            existingCarparkAvailability.totalLots() + newCarparkAvailability.totalLots(),
-            existingCarparkAvailability.availableLots() + newCarparkAvailability.availableLots(),
+        return new CarParkAvailabilityDTO(
+            existingCarParkAvailability.carParkNumber(),
+            existingCarParkAvailability.totalLots() + newCarParkAvailability.totalLots(),
+            existingCarParkAvailability.availableLots() + newCarParkAvailability.availableLots(),
             lastUpdated
         );
     }
 
-    private CarparkAvailabilityDTO buildFrom(CarparkData carparkData) {
-        int totalLots = carparkData.carparkInfo().stream()
-            .mapToInt(CarparkInfo::totalLots)
+    private CarParkAvailabilityDTO buildFrom(CarParkData carParkData) {
+        int totalLots = carParkData.carParkInfo().stream()
+            .mapToInt(CarParkInfo::totalLots)
             .sum();
 
-        int availableLots = carparkData.carparkInfo().stream()
-            .mapToInt(CarparkInfo::availableLots)
+        int availableLots = carParkData.carParkInfo().stream()
+            .mapToInt(CarParkInfo::availableLots)
             .sum();
 
-        return new CarparkAvailabilityDTO(
-            carparkData.carparkNumber(),
+        return new CarParkAvailabilityDTO(
+            carParkData.carParkNumber(),
             totalLots,
             availableLots,
-            carparkData.lastUpdated()
+            carParkData.lastUpdated()
         );
     }
 }

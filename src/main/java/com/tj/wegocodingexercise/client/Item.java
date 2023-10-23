@@ -7,6 +7,6 @@ import java.util.List;
 
 public record Item(
     ZonedDateTime timestamp,
-    @JsonProperty("carpark_data") List<CarparkData> carparkData
+    @JsonProperty("carpark_data") List<CarParkData> carParkData
 ) {
 }

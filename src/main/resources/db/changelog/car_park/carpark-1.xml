@@ -5,8 +5,8 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
-    <changeSet id="add-carpark-table" author="tjlerias">
-        <createTable tableName="carpark">
+    <changeSet id="add-car-park-table" author="tjlerias">
+        <createTable tableName="car_park">
             <column name="id" type="varchar(4)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -24,7 +24,7 @@
             </column>
         </createTable>
         
-        <createIndex tableName="carpark" indexName="idx_carpark_location">
+        <createIndex tableName="car_park" indexName="idx_car_park_location">
             <column name="location" />
         </createIndex>
     </changeSet>

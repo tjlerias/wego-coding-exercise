@@ -5,6 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
-    <includeAll relativeToChangelogFile="true" path="/carpark"/>
-    <includeAll relativeToChangelogFile="true" path="/carpark_availability"/>
+    <includeAll relativeToChangelogFile="true" path="car_park"/>
+    <includeAll relativeToChangelogFile="true" path="car_park_availability"/>
 </databaseChangeLog>

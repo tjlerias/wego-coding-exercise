@@ -10,7 +10,7 @@ import org.locationtech.jts.geom.Point;
 import java.time.LocalDateTime;
 
 @Entity
-public class Carpark extends BaseEntity {
+public class CarPark extends BaseEntity {
 
     @Id
     @Column(nullable = false, length = 4)
@@ -22,19 +22,19 @@ public class Carpark extends BaseEntity {
     @Column(nullable = false, columnDefinition = "geometry(Point, 4326)")
     private Point location;
 
-    @OneToOne(mappedBy = "carpark", cascade = CascadeType.ALL)
-    private CarparkAvailability availability;
+    @OneToOne(mappedBy = "carPark", cascade = CascadeType.ALL)
+    private CarParkAvailability availability;
 
-    public Carpark() {
+    public CarPark() {
     }
 
-    public Carpark(String id, String address, Point location) {
+    public CarPark(String id, String address, Point location) {
         this.id = id;
         this.address = address;
         this.location = location;
     }
 
-    public Carpark(
+    public CarPark(
         String id,
         String address,
         Point location,
@@ -45,7 +45,7 @@ public class Carpark extends BaseEntity {
         this.id = id;
         this.address = address;
         this.location = location;
-        this.availability = new CarparkAvailability(this, totalLots, availableLots);
+        this.availability = new CarParkAvailability(this, totalLots, availableLots);
         this.availability.setUpdatedAt(updatedAt);
     }
 
@@ -73,11 +73,11 @@ public class Carpark extends BaseEntity {
         this.location = location;
     }
 
-    public CarparkAvailability getAvailability() {
+    public CarParkAvailability getAvailability() {
         return availability;
     }
 
-    public void setAvailability(CarparkAvailability availability) {
+    public void setAvailability(CarParkAvailability availability) {
         this.availability = availability;
     }
 }

@@ -1,11 +1,11 @@
 package com.tj.wegocodingexercise.service;
 
-import com.tj.wegocodingexercise.client.CarparkAvailabilityResponse;
-import com.tj.wegocodingexercise.client.CarparkData;
-import com.tj.wegocodingexercise.client.CarparkInfo;
+import com.tj.wegocodingexercise.client.CarParkAvailabilityResponse;
+import com.tj.wegocodingexercise.client.CarParkData;
+import com.tj.wegocodingexercise.client.CarParkInfo;
 import com.tj.wegocodingexercise.client.DataGovSGClient;
 import com.tj.wegocodingexercise.client.Item;
-import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
+import com.tj.wegocodingexercise.dto.CarParkAvailabilityDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,19 +25,19 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DataGovSGServiceTest {
 
-    private static final List<CarparkInfo> carparkInfo1 = List.of(new CarparkInfo(10, "C", 1));
-    private static final List<CarparkInfo> carparkInfo2 = List.of(new CarparkInfo(5, "S", 5));
-    private static final List<CarparkInfo> carparkInfo3 = List.of(
-        new CarparkInfo(10, "C", 5),
-        new CarparkInfo(20, "Y", 10)
+    private static final List<CarParkInfo> CAR_PARK_INFO_1 = List.of(new CarParkInfo(10, "C", 1));
+    private static final List<CarParkInfo> CAR_PARK_INFO_2 = List.of(new CarParkInfo(5, "S", 5));
+    private static final List<CarParkInfo> CAR_PARK_INFO_3 = List.of(
+        new CarParkInfo(10, "C", 5),
+        new CarParkInfo(20, "Y", 10)
     );
-    private static final List<CarparkData> carparkData = List.of(
-        new CarparkData(carparkInfo1, "ACB", LocalDateTime.of(2023, 1, 1, 0, 0)),
-        new CarparkData(carparkInfo2, "ACB", LocalDateTime.of(2023, 2, 1, 0, 0)),
-        new CarparkData(carparkInfo3, "ACM", LocalDateTime.of(2023, 3, 1, 0, 0))
+    private static final List<CarParkData> carParkData = List.of(
+        new CarParkData(CAR_PARK_INFO_1, "ACB", LocalDateTime.of(2023, 1, 1, 0, 0)),
+        new CarParkData(CAR_PARK_INFO_2, "ACB", LocalDateTime.of(2023, 2, 1, 0, 0)),
+        new CarParkData(CAR_PARK_INFO_3, "ACM", LocalDateTime.of(2023, 3, 1, 0, 0))
     );
-    private static final List<Item> items = List.of(new Item(ZonedDateTime.now(), carparkData));
-    private static final CarparkAvailabilityResponse response = new CarparkAvailabilityResponse(items);
+    private static final List<Item> items = List.of(new Item(ZonedDateTime.now(), carParkData));
+    private static final CarParkAvailabilityResponse response = new CarParkAvailabilityResponse(items);
     @Mock
     private DataGovSGClient dataGovSGClient;
 
@@ -50,18 +50,18 @@ class DataGovSGServiceTest {
 
     @Test
     void getCarparkAvailability_success() {
-        Map<String, CarparkAvailabilityDTO> expected = Map.of(
-            "ACB", new CarparkAvailabilityDTO("ACB", 15, 6, LocalDateTime.of(2023, 2, 1, 0, 0)),
-            "ACM", new CarparkAvailabilityDTO("ACM", 30, 15, LocalDateTime.of(2023, 3, 1, 0, 0))
+        Map<String, CarParkAvailabilityDTO> expected = Map.of(
+            "ACB", new CarParkAvailabilityDTO("ACB", 15, 6, LocalDateTime.of(2023, 2, 1, 0, 0)),
+            "ACM", new CarParkAvailabilityDTO("ACM", 30, 15, LocalDateTime.of(2023, 3, 1, 0, 0))
         );
 
-        when(dataGovSGClient.getCarparkAvailability()).thenReturn(response);
+        when(dataGovSGClient.getCarParkAvailability()).thenReturn(response);
 
-        Map<String, CarparkAvailabilityDTO> actual = dataGovSGService.getCarparkAvailability();
+        Map<String, CarParkAvailabilityDTO> actual = dataGovSGService.getCarParkAvailability();
 
         assertThat(actual).isEqualTo(expected);
 
-        verify(dataGovSGClient).getCarparkAvailability();
+        verify(dataGovSGClient).getCarParkAvailability();
         verifyNoMoreInteractions(dataGovSGClient);
     }
 }

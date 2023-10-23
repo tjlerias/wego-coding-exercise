@@ -5,16 +5,16 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
-    <changeSet id="add-carpark-availability-table" author="tjlerias">
-        <createTable tableName="carpark_availability">
+    <changeSet id="add-car-park-availability-table" author="tjlerias">
+        <createTable tableName="car_park_availability">
             <column name="id" type="serial">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="carpark_id" type="varchar(4)">
+            <column name="car_park_id" type="varchar(4)">
                 <constraints
                         nullable="false"
-                        foreignKeyName="fk_carpark_id"
-                        referencedTableName="carpark"
+                        foreignKeyName="fk_car_park_id"
+                        referencedTableName="car_park"
                         referencedColumnNames="id"
                         unique="true"
                 />

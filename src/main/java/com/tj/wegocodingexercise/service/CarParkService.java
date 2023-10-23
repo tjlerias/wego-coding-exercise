@@ -1,11 +1,11 @@
 package com.tj.wegocodingexercise.service;
 
-import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
-import com.tj.wegocodingexercise.dto.CarparkDetails;
-import com.tj.wegocodingexercise.dto.NearestCarparksRequest;
-import com.tj.wegocodingexercise.entity.Carpark;
-import com.tj.wegocodingexercise.entity.CarparkAvailability;
-import com.tj.wegocodingexercise.repository.CarparkRepository;
+import com.tj.wegocodingexercise.dto.CarParkAvailabilityDTO;
+import com.tj.wegocodingexercise.dto.CarParkDetails;
+import com.tj.wegocodingexercise.dto.NearestCarParksRequest;
+import com.tj.wegocodingexercise.entity.CarPark;
+import com.tj.wegocodingexercise.entity.CarParkAvailability;
+import com.tj.wegocodingexercise.repository.CarParkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
 import com.tj.wegocodingexercise.util.ResourceProvider;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,9 +37,9 @@ import java.util.stream.StreamSupport;
 
 @Service
 @Transactional(readOnly = true)
-public class CarparkService {
+public class CarParkService {
 
-    private static final Logger logger = LoggerFactory.getLogger(CarparkService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CarParkService.class);
 
     private static final String CAR_PARK_NUMBER = "car_park_no";
     private static final String ADDRESS = "address";
@@ -53,63 +53,63 @@ public class CarparkService {
     private static final String CAR_PARK_DECKS = "car_park_decks";
     private static final String GANTRY_HEIGHT = "gantry_height";
     private static final String CAR_PARK_BASEMENT = "car_park_basement";
-    private static final String[] CARPARK_CSV_HEADERS = {CAR_PARK_NUMBER, ADDRESS, X_COORDINATE, Y_COORDINATE,
+    private static final String[] CAR_PARK_CSV_HEADERS = {CAR_PARK_NUMBER, ADDRESS, X_COORDINATE, Y_COORDINATE,
         CAR_PARK_TYPE, PARKING_SYSTEM_TYPE, SHORT_TERM_PARKING, FREE_PARKING, NIGHT_PARKING, CAR_PARK_DECKS,
         GANTRY_HEIGHT, CAR_PARK_BASEMENT};
 
     private static final GeometryFactory geometryFactory = new GeometryFactory();
 
-    private final CarparkRepository carparkRepository;
+    private final CarParkRepository carParkRepository;
     private final DataGovSGService dataGovSGService;
     private final ResourceProvider resourceProvider;
-    private final String carparkInformationCsvPath;
+    private final String carParkInformationCsvPath;
 
-    public CarparkService(
-        CarparkRepository carparkRepository,
+    public CarParkService(
+        CarParkRepository carParkRepository,
         DataGovSGService dataGovSGService,
         ResourceProvider resourceProvider,
-        @Value("${carpark.information.csv.path}") String carparkInformationCsvPath
+        @Value("${car.park.information.csv.path}") String carParkInformationCsvPath
     ) {
-        this.carparkRepository = carparkRepository;
+        this.carParkRepository = carParkRepository;
         this.dataGovSGService = dataGovSGService;
         this.resourceProvider = resourceProvider;
-        this.carparkInformationCsvPath = carparkInformationCsvPath;
+        this.carParkInformationCsvPath = carParkInformationCsvPath;
     }
 
     @Transactional
     public void loadCarparkData() {
-        if (carparkRepository.count() > 0) {
+        if (carParkRepository.count() > 0) {
             // No need to load data again
             return;
         }
 
-        logger.info("Loading carpark data to the database start.");
+        logger.info("Loading car park data to the database start.");
 
-        List<Carpark> carparks = loadFromCSVResource(carparkInformationCsvPath);
+        List<CarPark> carParks = loadFromCSVResource(carParkInformationCsvPath);
 
-        createCarparkAvailability(carparks);
+        createCarparkAvailability(carParks);
 
-        carparkRepository.saveAll(carparks);
+        carParkRepository.saveAll(carParks);
 
-        logger.info("Loading carpark data to the database end.");
+        logger.info("Loading car park data to the database end.");
     }
 
-    private void createCarparkAvailability(List<Carpark> carparks) {
-        Map<String, CarparkAvailabilityDTO> availabilityPerCarpark =
-            dataGovSGService.getCarparkAvailability();
+    private void createCarparkAvailability(List<CarPark> carParks) {
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarpark =
+            dataGovSGService.getCarParkAvailability();
 
-        carparks.forEach(carpark ->
-            Optional.ofNullable(availabilityPerCarpark.get(carpark.getId()))
-                .ifPresent(a -> carpark.setAvailability(
-                    new CarparkAvailability(carpark, a.totalLots(), a.availableLots()))
+        carParks.forEach(carPark ->
+            Optional.ofNullable(availabilityPerCarpark.get(carPark.getId()))
+                .ifPresent(a -> carPark.setAvailability(
+                    new CarParkAvailability(carPark, a.totalLots(), a.availableLots()))
                 ));
     }
 
-    private List<Carpark> loadFromCSVResource(String resourcePath) {
+    private List<CarPark> loadFromCSVResource(String resourcePath) {
         try (InputStream inputStream = resourceProvider.getInputStream(resourcePath)) {
             try (Reader reader = new InputStreamReader(inputStream)) {
                 CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
-                    .setHeader(CARPARK_CSV_HEADERS)
+                    .setHeader(CAR_PARK_CSV_HEADERS)
                     .setSkipHeaderRecord(true)
                     .build();
 
@@ -120,11 +120,11 @@ public class CarparkService {
                     .toList();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error loading carparks from CSV", e);
+            throw new RuntimeException("Error loading car parks from CSV", e);
         }
     }
 
-    private Carpark buildFrom(CSVRecord csvRecord) {
+    private CarPark buildFrom(CSVRecord csvRecord) {
         ProjCoordinate coordinate = CoordinateTransformUtil.transform(
             CoordinateTransformUtil.SVY21,
             CoordinateTransformUtil.WGS84,
@@ -134,7 +134,7 @@ public class CarparkService {
             )
         );
 
-        return new Carpark(
+        return new CarPark(
             csvRecord.get(CAR_PARK_NUMBER),
             csvRecord.get(ADDRESS),
             geometryFactory.createPoint(
@@ -146,56 +146,56 @@ public class CarparkService {
     }
 
     @Transactional
-    public List<CarparkDetails> getNearestCarParks(NearestCarparksRequest request, Pageable pageable) {
+    public List<CarParkDetails> getNearestCarParks(NearestCarParksRequest request, Pageable pageable) {
         Point location = geometryFactory.createPoint(new Coordinate(request.longitude(), request.latitude()));
-        Page<Carpark> carparks = carparkRepository.findNearestCarparks(location, request.distance(), pageable);
+        Page<CarPark> carParks = carParkRepository.findNearestCarParks(location, request.distance(), pageable);
 
-        updateCarparkAvailability(carparks.getContent());
+        updateCarParkAvailability(carParks.getContent());
 
-        return carparks.stream()
+        return carParks.stream()
             .map(this::buildFrom)
             .toList();
     }
 
-    private void updateCarparkAvailability(List<Carpark> carparks) {
-        Map<String, CarparkAvailabilityDTO> availabilityPerCarpark =
-            dataGovSGService.getCarparkAvailability();
+    private void updateCarParkAvailability(List<CarPark> carParks) {
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark =
+            dataGovSGService.getCarParkAvailability();
 
-        List<Carpark> carparkWithOutdatedAvailability = carparks.stream()
-            .filter(hasOutdatedAvailability(availabilityPerCarpark))
+        List<CarPark> carParkWithOutdatedAvailability = carParks.stream()
+            .filter(hasOutdatedAvailability(availabilityPerCarPark))
             .toList();
 
-        if (CollectionUtils.isNotEmpty(carparkWithOutdatedAvailability)) {
-            carparkWithOutdatedAvailability.forEach(updateCarparkAvailability(availabilityPerCarpark));
-            carparkRepository.saveAll(carparkWithOutdatedAvailability);
+        if (CollectionUtils.isNotEmpty(carParkWithOutdatedAvailability)) {
+            carParkWithOutdatedAvailability.forEach(updateCarParkAvailability(availabilityPerCarPark));
+            carParkRepository.saveAll(carParkWithOutdatedAvailability);
         }
     }
 
-    private Consumer<Carpark> updateCarparkAvailability(Map<String, CarparkAvailabilityDTO> availabilityPerCarpark) {
-        return carparkWithOutdatedAvailability -> {
-            CarparkAvailabilityDTO updatedAvailability =
-                availabilityPerCarpark.get(carparkWithOutdatedAvailability.getId());
-            CarparkAvailability availability = carparkWithOutdatedAvailability.getAvailability();
+    private Consumer<CarPark> updateCarParkAvailability(Map<String, CarParkAvailabilityDTO> availabilityPerCarPark) {
+        return carParkWithOutdatedAvailability -> {
+            CarParkAvailabilityDTO updatedAvailability =
+                availabilityPerCarPark.get(carParkWithOutdatedAvailability.getId());
+            CarParkAvailability availability = carParkWithOutdatedAvailability.getAvailability();
             availability.setTotalLots(updatedAvailability.totalLots());
             availability.setAvailableLots(updatedAvailability.availableLots());
         };
     }
 
-    private Predicate<Carpark> hasOutdatedAvailability(Map<String, CarparkAvailabilityDTO> availabilityPerCarpark) {
-        return carpark -> {
-            CarparkAvailabilityDTO updatedAvailability = availabilityPerCarpark.get(carpark.getId());
-            return updatedAvailability != null && carpark.getAvailability().getUpdatedAt()
+    private Predicate<CarPark> hasOutdatedAvailability(Map<String, CarParkAvailabilityDTO> availabilityPerCarPark) {
+        return carPark -> {
+            CarParkAvailabilityDTO updatedAvailability = availabilityPerCarPark.get(carPark.getId());
+            return updatedAvailability != null && carPark.getAvailability().getUpdatedAt()
                 .isBefore(updatedAvailability.lastUpdated());
         };
     }
 
-    private CarparkDetails buildFrom(Carpark carpark) {
-        return new CarparkDetails(
-            carpark.getAddress(),
-            carpark.getLocation().getY(),
-            carpark.getLocation().getX(),
-            carpark.getAvailability().getTotalLots(),
-            carpark.getAvailability().getAvailableLots()
+    private CarParkDetails buildFrom(CarPark carPark) {
+        return new CarParkDetails(
+            carPark.getAddress(),
+            carPark.getLocation().getY(),
+            carPark.getLocation().getX(),
+            carPark.getAvailability().getTotalLots(),
+            carPark.getAvailability().getAvailableLots()
         );
     }
 }

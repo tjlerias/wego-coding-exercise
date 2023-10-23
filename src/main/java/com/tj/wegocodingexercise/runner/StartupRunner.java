@@ -1,6 +1,6 @@
 package com.tj.wegocodingexercise.runner;
 
-import com.tj.wegocodingexercise.service.CarparkService;
+import com.tj.wegocodingexercise.service.CarParkService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -12,15 +12,15 @@ import java.util.TimeZone;
 @Component
 public class StartupRunner implements ApplicationRunner {
 
-    private final CarparkService carparkService;
+    private final CarParkService carParkService;
 
-    public StartupRunner(CarparkService carparkService) {
-        this.carparkService = carparkService;
+    public StartupRunner(CarParkService carParkService) {
+        this.carParkService = carParkService;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
-        carparkService.loadCarparkData();
+        carParkService.loadCarparkData();
     }
 }

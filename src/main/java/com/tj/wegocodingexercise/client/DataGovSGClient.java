@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 public interface DataGovSGClient {
 
     /**
-     * Gets the latest carpark availability in Singapore
+     * Gets the latest car park availability in Singapore
      *
-     * @return The latest carpark availability
+     * @return The latest car park availability
      */
     @GetMapping("/v1/transport/carpark-availability")
-    CarparkAvailabilityResponse getCarparkAvailability();
+    CarParkAvailabilityResponse getCarParkAvailability();
 }

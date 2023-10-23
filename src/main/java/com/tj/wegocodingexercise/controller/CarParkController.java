@@ -1,8 +1,8 @@
 package com.tj.wegocodingexercise.controller;
 
-import com.tj.wegocodingexercise.dto.CarparkDetails;
-import com.tj.wegocodingexercise.dto.NearestCarparksRequest;
-import com.tj.wegocodingexercise.service.CarparkService;
+import com.tj.wegocodingexercise.dto.CarParkDetails;
+import com.tj.wegocodingexercise.dto.NearestCarParksRequest;
+import com.tj.wegocodingexercise.service.CarParkService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
@@ -16,21 +16,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/carparks")
 @Validated
-public class CarparkController {
+public class CarParkController {
 
-    private final CarparkService carparkService;
+    private final CarParkService carParkService;
 
-    public CarparkController(CarparkService carparkService) {
-        this.carparkService = carparkService;
+    public CarParkController(CarParkService carParkService) {
+        this.carParkService = carParkService;
     }
 
     @GetMapping("/nearest")
-    public List<CarparkDetails> getNearestCarparks(
-        @Valid NearestCarparksRequest request,
+    public List<CarParkDetails> getNearestCarParks(
+        @Valid NearestCarParksRequest request,
         @RequestParam(required = false, defaultValue = "1") Integer page,
         @RequestParam(required = false, name = "per_page", defaultValue = "10") Integer pageSize
     ) {
-        return carparkService.getNearestCarParks(
+        return carParkService.getNearestCarParks(
             request,
             PageRequest.of(page - 1, pageSize)
         );

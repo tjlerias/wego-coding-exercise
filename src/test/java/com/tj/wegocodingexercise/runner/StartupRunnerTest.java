@@ -1,6 +1,6 @@
 package com.tj.wegocodingexercise.runner;
 
-import com.tj.wegocodingexercise.service.CarparkService;
+import com.tj.wegocodingexercise.service.CarParkService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,13 +17,13 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class StartupRunnerTest {
 
     @Mock
-    private CarparkService carparkService;
+    private CarParkService carParkService;
 
     private StartupRunner startupRunner;
 
     @BeforeEach
     void setUp() {
-        startupRunner = new StartupRunner(carparkService);
+        startupRunner = new StartupRunner(carParkService);
     }
 
     @Test
@@ -32,7 +32,7 @@ class StartupRunnerTest {
 
         assertThat(TimeZone.getDefault()).isEqualTo(TimeZone.getTimeZone("GMT+8"));
 
-        verify(carparkService).loadCarparkData();
-        verifyNoMoreInteractions(carparkService);
+        verify(carParkService).loadCarparkData();
+        verifyNoMoreInteractions(carParkService);
     }
 }

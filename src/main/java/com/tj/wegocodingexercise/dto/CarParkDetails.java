@@ -2,7 +2,7 @@ package com.tj.wegocodingexercise.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record CarparkDetails(
+public record CarParkDetails(
     String address,
     Double latitude,
     Double longitude,
