@@ -1,10 +1,13 @@
 package com.tj.wegocodingexercise.service;
 
 import com.tj.wegocodingexercise.dto.CarparkAvailabilityDTO;
+import com.tj.wegocodingexercise.dto.CarparkDetails;
+import com.tj.wegocodingexercise.dto.NearestCarparksRequest;
 import com.tj.wegocodingexercise.entity.Carpark;
 import com.tj.wegocodingexercise.entity.CarparkAvailability;
 import com.tj.wegocodingexercise.repository.CarparkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.math3.util.Precision;
@@ -15,6 +18,8 @@ import org.locationtech.proj4j.ProjCoordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +31,8 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -48,8 +53,8 @@ public class CarparkService {
     private static final String CAR_PARK_DECKS = "car_park_decks";
     private static final String GANTRY_HEIGHT = "gantry_height";
     private static final String CAR_PARK_BASEMENT = "car_park_basement";
-    private static final String[] CARPARK_CSV_HEADERS = {CAR_PARK_NUMBER, ADDRESS, X_COORDINATE, Y_COORDINATE, CAR_PARK_TYPE,
-        PARKING_SYSTEM_TYPE, SHORT_TERM_PARKING, FREE_PARKING, NIGHT_PARKING, CAR_PARK_DECKS,
+    private static final String[] CARPARK_CSV_HEADERS = {CAR_PARK_NUMBER, ADDRESS, X_COORDINATE, Y_COORDINATE,
+        CAR_PARK_TYPE, PARKING_SYSTEM_TYPE, SHORT_TERM_PARKING, FREE_PARKING, NIGHT_PARKING, CAR_PARK_DECKS,
         GANTRY_HEIGHT, CAR_PARK_BASEMENT};
 
     private final GeometryFactory geometryFactory = new GeometryFactory();
@@ -79,16 +84,22 @@ public class CarparkService {
 
         List<Carpark> carparks = loadFromCSVResource(carparkInformationCsvPath);
 
-        Map<String, CarparkAvailabilityDTO> availabilityPerCarpark =
-            dataGovSGService.getCarparkAvailability(null).stream()
-                .collect(Collectors.toMap(CarparkAvailabilityDTO::carparkNumber, Function.identity()));
-
-        carparks.forEach(carpark -> Optional.ofNullable(availabilityPerCarpark.get(carpark.getId()))
-            .ifPresent(a -> carpark.setAvailability(new CarparkAvailability(carpark, a.totalLots(), a.availableLots()))));
+        createCarparkAvailability(carparks);
 
         carparkRepository.saveAll(carparks);
 
         logger.info("Loading carpark data to the database end.");
+    }
+
+    private void createCarparkAvailability(List<Carpark> carparks) {
+        Map<String, CarparkAvailabilityDTO> availabilityPerCarpark =
+            dataGovSGService.getCarparkAvailability();
+
+        carparks.forEach(carpark ->
+            Optional.ofNullable(availabilityPerCarpark.get(carpark.getId()))
+                .ifPresent(a -> carpark.setAvailability(
+                    new CarparkAvailability(carpark, a.totalLots(), a.availableLots()))
+                ));
     }
 
     private List<Carpark> loadFromCSVResource(String resourcePath) {
@@ -135,9 +146,57 @@ public class CarparkService {
         );
     }
 
-    public void getNearbyCarParks() {
-        Point location = geometryFactory.createPoint(new Coordinate(103.897, 1.37326));
-        Integer distance = 500;
-        carparkRepository.findNearbyCarparks(location, distance);
+    @Transactional
+    public List<CarparkDetails> getNearestCarParks(NearestCarparksRequest request, Pageable pageable) {
+        Point location = geometryFactory.createPoint(new Coordinate(request.longitude(), request.latitude()));
+        Page<Carpark> carparks = carparkRepository.findNearestCarparks(location, request.distance(), pageable);
+
+        updateCarparkAvailability(carparks.getContent());
+
+        return carparks.stream()
+            .map(this::buildFrom)
+            .toList();
+    }
+
+    private void updateCarparkAvailability(List<Carpark> carparks) {
+        Map<String, CarparkAvailabilityDTO> availabilityPerCarpark =
+            dataGovSGService.getCarparkAvailability();
+
+        List<Carpark> carparkWithOutdatedAvailability = carparks.stream()
+            .filter(hasOutdatedAvailability(availabilityPerCarpark))
+            .toList();
+
+        if (CollectionUtils.isNotEmpty(carparkWithOutdatedAvailability)) {
+            carparkWithOutdatedAvailability.forEach(updateCarparkAvailability(availabilityPerCarpark));
+            carparkRepository.saveAll(carparkWithOutdatedAvailability);
+        }
+    }
+
+    private Consumer<Carpark> updateCarparkAvailability(Map<String, CarparkAvailabilityDTO> availabilityPerCarpark) {
+        return carparkWithOutdatedAvailability -> {
+            CarparkAvailabilityDTO updatedAvailability =
+                availabilityPerCarpark.get(carparkWithOutdatedAvailability.getId());
+            CarparkAvailability availability = carparkWithOutdatedAvailability.getAvailability();
+            availability.setTotalLots(updatedAvailability.totalLots());
+            availability.setAvailableLots(updatedAvailability.availableLots());
+        };
+    }
+
+    private Predicate<Carpark> hasOutdatedAvailability(Map<String, CarparkAvailabilityDTO> availabilityPerCarpark) {
+        return carpark -> {
+            CarparkAvailabilityDTO updatedAvailability = availabilityPerCarpark.get(carpark.getId());
+            return updatedAvailability != null && carpark.getAvailability().getUpdatedAt()
+                .isBefore(updatedAvailability.lastUpdated());
+        };
+    }
+
+    private CarparkDetails buildFrom(Carpark carpark) {
+        return new CarparkDetails(
+            carpark.getAddress(),
+            carpark.getLocation().getY(),
+            carpark.getLocation().getX(),
+            carpark.getAvailability().getTotalLots(),
+            carpark.getAvailability().getAvailableLots()
+        );
     }
 }

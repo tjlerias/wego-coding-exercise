@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,10 +22,10 @@ public class DataGovSGService {
         this.dataGovSGClient = dataGovSGClient;
     }
 
-    public List<CarparkAvailabilityDTO> getCarparkAvailability(LocalDateTime dateTime) {
-        CarparkAvailabilityResponse response = dataGovSGClient.getCarparkAvailability(dateTime);
+    public Map<String, CarparkAvailabilityDTO> getCarparkAvailability() {
+        CarparkAvailabilityResponse response = dataGovSGClient.getCarparkAvailability();
 
-        Map<String, CarparkAvailabilityDTO> carparkAvailabilityPerCarpark = response.items().stream()
+        return response.items().stream()
             .map(Item::carparkData)
             .flatMap(Collection::stream)
             .collect(Collectors.toMap(
@@ -36,8 +35,6 @@ public class DataGovSGService {
                 // lot types in their carpark info, thus we need to merge their details.
                 this::mergeCarparkAvailability
             ));
-
-        return List.copyOf(carparkAvailabilityPerCarpark.values());
     }
 
     private CarparkAvailabilityDTO mergeCarparkAvailability(

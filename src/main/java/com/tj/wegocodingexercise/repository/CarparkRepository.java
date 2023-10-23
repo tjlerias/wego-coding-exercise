@@ -2,13 +2,13 @@ package com.tj.wegocodingexercise.repository;
 
 import com.tj.wegocodingexercise.entity.Carpark;
 import org.locationtech.jts.geom.Point;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
-public interface CarparkRepository extends CrudRepository<Carpark, String> {
+public interface CarparkRepository extends JpaRepository<Carpark, String> {
 
     @Query(
         nativeQuery = true,
@@ -23,5 +23,8 @@ public interface CarparkRepository extends CrudRepository<Carpark, String> {
             ORDER BY distance ASC
             """
     )
-    List<Carpark> findNearbyCarparks(@Param("location") Point location, @Param("distance") Integer distance);
+    Page<Carpark> findNearestCarparks(
+        @Param("location") Point location,
+        @Param("distance") Integer distance,
+        Pageable pageable);
 }
