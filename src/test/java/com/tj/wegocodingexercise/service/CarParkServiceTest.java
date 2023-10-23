@@ -55,13 +55,13 @@ class CarParkServiceTest {
         new CarPark(
             "ACB",
             "BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK",
-            geometryFactory.createPoint(new Coordinate(103.8541, 1.3011)),
+            geometryFactory.createPoint(new Coordinate(103.85412, 1.30106)),
             100,
             50,
             LocalDateTime.now().plusDays(1)),
         new CarPark("ACM",
             "BLK 98A ALJUNIED CRESCENT",
-            geometryFactory.createPoint(new Coordinate(103.8851, 1.321)),
+            geometryFactory.createPoint(new Coordinate(103.88506, 1.321)),
             123,
             12,
             LocalDateTime.now().plusDays(1))
@@ -71,13 +71,13 @@ class CarParkServiceTest {
         new CarPark(
             "ACB",
             "BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK",
-            geometryFactory.createPoint(new Coordinate(103.8541, 1.3011)),
+            geometryFactory.createPoint(new Coordinate(103.85412, 1.30106)),
             25,
             10,
             LocalDateTime.now().minusDays(1)),
         new CarPark("ACM",
             "BLK 98A ALJUNIED CRESCENT",
-            geometryFactory.createPoint(new Coordinate(103.8851, 1.321)),
+            geometryFactory.createPoint(new Coordinate(103.88506, 1.321)),
             500,
             20,
             LocalDateTime.now().minusDays(1))
