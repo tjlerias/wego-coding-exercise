@@ -7,6 +7,7 @@ import com.tj.wegocodingexercise.entity.Carpark;
 import com.tj.wegocodingexercise.entity.CarparkAvailability;
 import com.tj.wegocodingexercise.repository.CarparkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
+import com.tj.wegocodingexercise.util.ResourceProvider;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -23,7 +24,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -57,19 +57,22 @@ public class CarparkService {
         CAR_PARK_TYPE, PARKING_SYSTEM_TYPE, SHORT_TERM_PARKING, FREE_PARKING, NIGHT_PARKING, CAR_PARK_DECKS,
         GANTRY_HEIGHT, CAR_PARK_BASEMENT};
 
-    private final GeometryFactory geometryFactory = new GeometryFactory();
+    private static final GeometryFactory geometryFactory = new GeometryFactory();
 
     private final CarparkRepository carparkRepository;
     private final DataGovSGService dataGovSGService;
+    private final ResourceProvider resourceProvider;
     private final String carparkInformationCsvPath;
 
     public CarparkService(
         CarparkRepository carparkRepository,
         DataGovSGService dataGovSGService,
+        ResourceProvider resourceProvider,
         @Value("${carpark.information.csv.path}") String carparkInformationCsvPath
     ) {
         this.carparkRepository = carparkRepository;
         this.dataGovSGService = dataGovSGService;
+        this.resourceProvider = resourceProvider;
         this.carparkInformationCsvPath = carparkInformationCsvPath;
     }
 
@@ -103,11 +106,7 @@ public class CarparkService {
     }
 
     private List<Carpark> loadFromCSVResource(String resourcePath) {
-        try (InputStream inputStream = getClass().getResourceAsStream(resourcePath)) {
-            if (inputStream == null) {
-                throw new FileNotFoundException("File not found: " + resourcePath);
-            }
-
+        try (InputStream inputStream = resourceProvider.getInputStream(resourcePath)) {
             try (Reader reader = new InputStreamReader(inputStream)) {
                 CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
                     .setHeader(CARPARK_CSV_HEADERS)
@@ -140,8 +139,8 @@ public class CarparkService {
             csvRecord.get(ADDRESS),
             geometryFactory.createPoint(
                 new Coordinate(
-                    Precision.round(coordinate.x, 5),
-                    Precision.round(coordinate.y, 5)
+                    Precision.round(coordinate.x, 4),
+                    Precision.round(coordinate.y, 4)
                 ))
         );
     }

@@ -27,7 +27,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+    public ResponseEntity<Object> handleMethodArgumentNotValid(
         MethodArgumentNotValidException ex,
         HttpHeaders headers,
         HttpStatusCode status,
@@ -41,12 +41,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
-    protected ResponseEntity<Object> handleMissingServletRequestParameter(
+    public ResponseEntity<Object> handleMissingServletRequestParameter(
         MissingServletRequestParameterException ex,
         HttpHeaders headers,
         HttpStatusCode status,
         WebRequest request
     ) {
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), null));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()
             .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), null));
     }

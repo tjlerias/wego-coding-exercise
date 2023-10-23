@@ -3,6 +3,7 @@ package com.tj.wegocodingexercise.controller;
 import com.tj.wegocodingexercise.dto.CarparkDetails;
 import com.tj.wegocodingexercise.dto.NearestCarparksRequest;
 import com.tj.wegocodingexercise.service.CarparkService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,14 +26,12 @@ public class CarparkController {
 
     @GetMapping("/nearest")
     public List<CarparkDetails> getNearestCarparks(
-        @RequestParam double latitude,
-        @RequestParam double longitude,
-        @RequestParam(required = false, defaultValue = "500") Integer distance,
+        @Valid NearestCarparksRequest request,
         @RequestParam(required = false, defaultValue = "1") Integer page,
         @RequestParam(required = false, name = "per_page", defaultValue = "10") Integer pageSize
     ) {
         return carparkService.getNearestCarParks(
-            new NearestCarparksRequest(latitude, longitude, distance),
+            request,
             PageRequest.of(page - 1, pageSize)
         );
     }
