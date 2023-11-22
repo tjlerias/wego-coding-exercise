@@ -1,14 +1,13 @@
 package com.tj.wegocodingexercise.service;
 
+import com.tj.wegocodingexercise.config.CacheConfig;
 import com.tj.wegocodingexercise.dto.CarParkAvailabilityDTO;
 import com.tj.wegocodingexercise.dto.CarParkDetails;
 import com.tj.wegocodingexercise.dto.NearestCarParksRequest;
 import com.tj.wegocodingexercise.entity.CarPark;
-import com.tj.wegocodingexercise.entity.CarParkAvailability;
 import com.tj.wegocodingexercise.repository.CarParkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
 import com.tj.wegocodingexercise.util.ResourceProvider;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.math3.util.Precision;
@@ -21,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,12 +28,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.StreamSupport;
+
+import static com.tj.wegocodingexercise.config.CacheConfig.CAR_PARK_AVAILABILITY_SECONDARY_KEY;
 
 @Service
 @Transactional(readOnly = true)
@@ -63,46 +64,47 @@ public class CarParkService {
     private final DataGovSGService dataGovSGService;
     private final ResourceProvider resourceProvider;
     private final String carParkInformationCsvPath;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public CarParkService(
         CarParkRepository carParkRepository,
         DataGovSGService dataGovSGService,
         ResourceProvider resourceProvider,
-        @Value("${car.park.information.csv.path}") String carParkInformationCsvPath
+        @Value("${car.park.information.csv.path}") String carParkInformationCsvPath,
+        RedisTemplate<String, Object> redisTemplate
     ) {
         this.carParkRepository = carParkRepository;
         this.dataGovSGService = dataGovSGService;
         this.resourceProvider = resourceProvider;
         this.carParkInformationCsvPath = carParkInformationCsvPath;
+        this.redisTemplate = redisTemplate;
     }
 
     @Transactional
-    public void loadCarparkData() {
+    public void loadCarParkData() {
         if (carParkRepository.count() > 0) {
             // No need to load data again
             return;
         }
 
-        logger.info("Loading car park data to the database start.");
+        CompletableFuture<Map<String, CarParkAvailabilityDTO>> carParkAvailabilityFuture =
+            CompletableFuture.supplyAsync(dataGovSGService::getCarParkAvailability);
 
-        List<CarPark> carParks = loadFromCSVResource(carParkInformationCsvPath);
+        CompletableFuture<List<CarPark>> carParkFuture =
+            CompletableFuture.supplyAsync(() -> loadFromCSVResource(carParkInformationCsvPath));
 
-        createCarparkAvailability(carParks);
-
-        carParkRepository.saveAll(carParks);
-
-        logger.info("Loading car park data to the database end.");
+        carParkAvailabilityFuture.thenCombine(carParkFuture, this::getCarParksWithAvailabilityInformation)
+            .thenAccept(carParkRepository::saveAll)
+            .thenRun(() -> logger.info("Loading car park data to the database success."));
     }
 
-    private void createCarparkAvailability(List<CarPark> carParks) {
-        Map<String, CarParkAvailabilityDTO> availabilityPerCarpark =
-            dataGovSGService.getCarParkAvailability();
-
-        carParks.forEach(carPark ->
-            Optional.ofNullable(availabilityPerCarpark.get(carPark.getId()))
-                .ifPresent(a -> carPark.setAvailability(
-                    new CarParkAvailability(carPark, a.totalLots(), a.availableLots()))
-                ));
+    private List<CarPark> getCarParksWithAvailabilityInformation(
+        Map<String, CarParkAvailabilityDTO> carParkAvailability,
+        List<CarPark> carParks
+    ) {
+        return carParks.stream()
+            .filter(c -> carParkAvailability.get(c.getId()) != null)
+            .toList();
     }
 
     private List<CarPark> loadFromCSVResource(String resourcePath) {
@@ -150,52 +152,40 @@ public class CarParkService {
         Point location = geometryFactory.createPoint(new Coordinate(request.longitude(), request.latitude()));
         Page<CarPark> carParks = carParkRepository.findNearestCarParks(location, request.distance(), pageable);
 
-        updateCarParkAvailability(carParks.getContent());
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark = getCarParkAvailability();
 
-        return carParks.stream()
-            .map(this::buildFrom)
-            .toList();
-    }
-
-    private void updateCarParkAvailability(List<CarPark> carParks) {
-        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark =
-            dataGovSGService.getCarParkAvailability();
-
-        List<CarPark> carParkWithOutdatedAvailability = carParks.stream()
-            .filter(hasOutdatedAvailability(availabilityPerCarPark))
-            .toList();
-
-        if (CollectionUtils.isNotEmpty(carParkWithOutdatedAvailability)) {
-            carParkWithOutdatedAvailability.forEach(updateCarParkAvailability(availabilityPerCarPark));
-            carParkRepository.saveAll(carParkWithOutdatedAvailability);
+        if (availabilityPerCarPark == null) {
+            return new ArrayList<>();
         }
+
+        return carParks.getContent().stream()
+            .map(c -> buildFrom(c, availabilityPerCarPark))
+            .toList();
     }
 
-    private Consumer<CarPark> updateCarParkAvailability(Map<String, CarParkAvailabilityDTO> availabilityPerCarPark) {
-        return carParkWithOutdatedAvailability -> {
-            CarParkAvailabilityDTO updatedAvailability =
-                availabilityPerCarPark.get(carParkWithOutdatedAvailability.getId());
-            CarParkAvailability availability = carParkWithOutdatedAvailability.getAvailability();
-            availability.setTotalLots(updatedAvailability.totalLots());
-            availability.setAvailableLots(updatedAvailability.availableLots());
-        };
+    private Map<String, CarParkAvailabilityDTO> getCarParkAvailability() {
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark =
+            (Map<String, CarParkAvailabilityDTO>)
+                redisTemplate.opsForValue().get(CacheConfig.CAR_PARK_AVAILABILITY_PRIMARY_KEY);
+
+        if (availabilityPerCarPark == null) {
+            return (Map<String, CarParkAvailabilityDTO>)
+                redisTemplate.opsForValue().get(CAR_PARK_AVAILABILITY_SECONDARY_KEY);
+        }
+
+        return availabilityPerCarPark;
     }
 
-    private Predicate<CarPark> hasOutdatedAvailability(Map<String, CarParkAvailabilityDTO> availabilityPerCarPark) {
-        return carPark -> {
-            CarParkAvailabilityDTO updatedAvailability = availabilityPerCarPark.get(carPark.getId());
-            return updatedAvailability != null && carPark.getAvailability().getUpdatedAt()
-                .isBefore(updatedAvailability.lastUpdated());
-        };
-    }
+    private CarParkDetails buildFrom(CarPark carPark, Map<String, CarParkAvailabilityDTO> availabilityPerCarPark) {
+        Integer totalLots = availabilityPerCarPark.get(carPark.getId()).totalLots();
+        Integer availableLots = availabilityPerCarPark.get(carPark.getId()).availableLots();
 
-    private CarParkDetails buildFrom(CarPark carPark) {
         return new CarParkDetails(
             carPark.getAddress(),
             carPark.getLocation().getY(),
             carPark.getLocation().getX(),
-            carPark.getAvailability().getTotalLots(),
-            carPark.getAvailability().getAvailableLots()
+            totalLots,
+            availableLots
         );
     }
 }

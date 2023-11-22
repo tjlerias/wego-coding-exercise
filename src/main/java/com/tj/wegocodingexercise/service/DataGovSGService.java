@@ -23,7 +23,7 @@ public class DataGovSGService {
         this.dataGovSGClient = dataGovSGClient;
     }
 
-    @Cacheable(cacheNames = "carParkAvailability", sync = true)
+    @Cacheable(value = "carParkAvailability", sync = true)
     public Map<String, CarParkAvailabilityDTO> getCarParkAvailability() {
         CarParkAvailabilityResponse response = dataGovSGClient.getCarParkAvailability();
 

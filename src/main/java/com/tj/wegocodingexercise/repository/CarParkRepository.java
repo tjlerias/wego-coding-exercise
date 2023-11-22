@@ -17,9 +17,7 @@ public interface CarParkRepository extends JpaRepository<CarPark, String> {
                 c.*,
                 ST_Distance(c.location, ST_SetSRID(:location, 4326)) as distance
             FROM car_park c
-            JOIN car_park_availability ca ON ca.car_park_id = c.id
             WHERE ST_DWithin(c.location, ST_SetSRID(:location, 4326), :distance)
-            AND ca.available_lots > 0
             ORDER BY distance ASC
             """
     )

@@ -21,6 +21,6 @@ public class StartupRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+8"));
-        carParkService.loadCarparkData();
+        carParkService.loadCarParkData();
     }
 }

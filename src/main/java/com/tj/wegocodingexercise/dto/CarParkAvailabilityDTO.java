@@ -1,5 +1,6 @@
 package com.tj.wegocodingexercise.dto;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 public record CarParkAvailabilityDTO(
@@ -7,5 +8,5 @@ public record CarParkAvailabilityDTO(
     int totalLots,
     int availableLots,
     LocalDateTime lastUpdated
-) {
+) implements Serializable {
 }
