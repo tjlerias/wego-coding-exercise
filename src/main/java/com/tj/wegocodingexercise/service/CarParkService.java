@@ -8,6 +8,7 @@ import com.tj.wegocodingexercise.entity.CarPark;
 import com.tj.wegocodingexercise.repository.CarParkRepository;
 import com.tj.wegocodingexercise.util.CoordinateTransformUtil;
 import com.tj.wegocodingexercise.util.ResourceProvider;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.math3.util.Precision;
@@ -31,6 +32,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.StreamSupport;
 
@@ -87,23 +89,23 @@ public class CarParkService {
             return;
         }
 
-        CompletableFuture<Map<String, CarParkAvailabilityDTO>> carParkAvailabilityFuture =
+        CompletableFuture<Map<String, CarParkAvailabilityDTO>> availabilityPerCarParkFuture =
             CompletableFuture.supplyAsync(dataGovSGService::getCarParkAvailability);
 
         CompletableFuture<List<CarPark>> carParkFuture =
             CompletableFuture.supplyAsync(() -> loadFromCSVResource(carParkInformationCsvPath));
 
-        carParkAvailabilityFuture.thenCombine(carParkFuture, this::getCarParksWithAvailabilityInformation)
+        availabilityPerCarParkFuture.thenCombine(carParkFuture, this::getCarParksWithAvailabilityInformation)
             .thenAccept(carParkRepository::saveAll)
             .thenRun(() -> logger.info("Loading car park data to the database success."));
     }
 
     private List<CarPark> getCarParksWithAvailabilityInformation(
-        Map<String, CarParkAvailabilityDTO> carParkAvailability,
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark,
         List<CarPark> carParks
     ) {
         return carParks.stream()
-            .filter(c -> carParkAvailability.get(c.getId()) != null)
+            .filter(c -> availabilityPerCarPark.get(c.getId()) != null)
             .toList();
     }
 
@@ -149,16 +151,17 @@ public class CarParkService {
 
     @Transactional
     public List<CarParkDetails> getNearestCarParks(NearestCarParksRequest request, Pageable pageable) {
-        Point location = geometryFactory.createPoint(new Coordinate(request.longitude(), request.latitude()));
-        Page<CarPark> carParks = carParkRepository.findNearestCarParks(location, request.distance(), pageable);
-
         Map<String, CarParkAvailabilityDTO> availabilityPerCarPark = getCarParkAvailability();
 
         if (availabilityPerCarPark == null) {
             return new ArrayList<>();
         }
 
-        return carParks.getContent().stream()
+        Point location = geometryFactory.createPoint(new Coordinate(request.longitude(), request.latitude()));
+        List<CarPark> carParks = findNearestAvailableCarParks(location, request.distance(),
+            new ArrayList<>(), pageable, availabilityPerCarPark);
+
+        return carParks.stream()
             .map(c -> buildFrom(c, availabilityPerCarPark))
             .toList();
     }
@@ -174,6 +177,36 @@ public class CarParkService {
         }
 
         return availabilityPerCarPark;
+    }
+
+    private List<CarPark> findNearestAvailableCarParks(
+        Point location,
+        Integer distance,
+        List<String> excludedCarParkIds,
+        Pageable pageable,
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark
+    ) {
+        Page<CarPark> carParks = CollectionUtils.isEmpty(excludedCarParkIds)
+            ? carParkRepository.findNearestCarParks(location, distance, pageable)
+            : carParkRepository.findNearestCarParksExcluding(location, distance, excludedCarParkIds, pageable);
+
+        List<String> unavailableCarParkIds = carParks.getContent().stream()
+            .map(c -> availabilityPerCarPark.get(c.getId()))
+            .filter(CarParkService::isUnavailable)
+            .map(CarParkAvailabilityDTO::carParkNumber)
+            .toList();
+
+        if (CollectionUtils.isNotEmpty(unavailableCarParkIds)) {
+            excludedCarParkIds.addAll(unavailableCarParkIds);
+            return findNearestAvailableCarParks(location, distance,
+                excludedCarParkIds, pageable, availabilityPerCarPark);
+        }
+
+        return carParks.getContent();
+    }
+
+    private static boolean isUnavailable(CarParkAvailabilityDTO a) {
+        return Objects.isNull(a) || a.availableLots() == 0;
     }
 
     private CarParkDetails buildFrom(CarPark carPark, Map<String, CarParkAvailabilityDTO> availabilityPerCarPark) {

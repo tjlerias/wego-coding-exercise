@@ -39,8 +39,8 @@ public class CarParkAvailabilityScheduler {
     }
 
     private void fetchCarParkAvailability() {
-        Map<String, CarParkAvailabilityDTO> carParkAvailability = dataGovSGService.getCarParkAvailability();
-        redisTemplate.opsForValue().set(CAR_PARK_AVAILABILITY_SECONDARY_KEY, carParkAvailability);
+        Map<String, CarParkAvailabilityDTO> availabilityPerCarPark = dataGovSGService.getCarParkAvailability();
+        redisTemplate.opsForValue().set(CAR_PARK_AVAILABILITY_SECONDARY_KEY, availabilityPerCarPark);
         logger.info("Updating car park availability cache success.");
     }
 }
