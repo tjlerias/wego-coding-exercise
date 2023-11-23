@@ -22,19 +22,12 @@ Loading of data:
     utilizing an SRID (Spatial Reference ID) of 4326, which corresponds to the World Geodetic System.
   - Used https://epsg.io/transform to double-check transformation of coordinate values.
 - Car park availability
-  - When initializing the application, along with saving car park details into the database, 
-    the car park availability information is simultaneously loaded into the database, provided 
-    that the car_park_availability table is empty at the time. This process also facilitates 
-    the creation of a relationship between the `car_park` and `car_park_availability` tables, 
-    streamlining the retrieval of nearby car parks and their corresponding availability details.
-  - Given that the car park availability is subject to change every minute, a lazy loading strategy
-    has been implemented to update the data. This approach ensures that only the data requested by 
-    the user, as well as the data requiring updates based on a comparison between the 
-    external API’s timestamp and the `car_park_availability` record in the database, are refreshed.
-    This selective updating mechanism significantly reduces latency, ensuring a more efficient and responsive system.
+  - When initializing the application, a scheduled thread pool is run every minute to update 
+    the car park availability in the cache.
   - The external API provides a comprehensive response that encompasses the availability of all car parks, 
     with updates occurring every minute. To optimize efficiency and minimize redundant calls to the external API, 
-    I have implemented caching for the processed response.
+    I have implemented caching for the processed response and also storing stale cache which will be used in case 
+    of a cache miss.
 
 Considerations:
 - In terms of car park availability, I opted for a simplified approach by utilizing only the total number 
